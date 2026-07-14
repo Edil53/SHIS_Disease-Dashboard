@@ -37,7 +37,7 @@ function getCategoryBoundaries(scale, chartArea, pointCount) {
 
 const weeklyPeakHighlightPlugin = {
   id: 'weeklyPeakHighlight',
-  beforeDatasetsDraw(chart, args, pluginOptions) {
+  beforeDatasetsDraw(chart) {
     const settings = chart.options?.plugins?.weeklyPeakHighlight || {};
     const peakIndex = settings.peakIndex;
     if (peakIndex === undefined || peakIndex === null) return;
@@ -46,9 +46,9 @@ const weeklyPeakHighlightPlugin = {
     if (!ctx || !chartArea || !scales?.x || !scales?.y) return;
 
     const xScale = scales.x;
-  const boundaries = getCategoryBoundaries(xScale, chartArea, chart.data.labels.length);
-  const left = boundaries[peakIndex] ?? xScale.left;
-  const right = boundaries[peakIndex + 1] ?? xScale.right;
+    const boundaries = getCategoryBoundaries(xScale, chartArea, chart.data.labels.length);
+    const left = boundaries[peakIndex] ?? xScale.left;
+    const right = boundaries[peakIndex + 1] ?? xScale.right;
     if (right <= left) return;
 
     ctx.save();
@@ -57,7 +57,7 @@ const weeklyPeakHighlightPlugin = {
     ctx.fillRect(left, chartArea.top, right - left, chartArea.bottom - chartArea.top);
     ctx.restore();
   },
-  afterDatasetsDraw(chart, args, pluginOptions) {
+  afterDatasetsDraw(chart) {
     const settings = chart.options?.plugins?.weeklyPeakHighlight || {};
     const peakIndex = settings.peakIndex;
     if (peakIndex === undefined || peakIndex === null) return;
@@ -66,16 +66,16 @@ const weeklyPeakHighlightPlugin = {
     if (!ctx || !chartArea || !scales?.x || !scales?.y) return;
 
     const xScale = scales.x;
-  const boundaries = getCategoryBoundaries(xScale, chartArea, chart.data.labels.length);
-  const left = boundaries[peakIndex] ?? xScale.left;
-  const right = boundaries[peakIndex + 1] ?? xScale.right;
+    const boundaries = getCategoryBoundaries(xScale, chartArea, chart.data.labels.length);
+    const left = boundaries[peakIndex] ?? xScale.left;
+    const right = boundaries[peakIndex + 1] ?? xScale.right;
     if (right <= left) return;
 
     const label = settings.label || 'Peak Week';
     if (!label) return;
 
     const centerX = left + (right - left) / 2;
-  const textY = Math.max(14, chartArea.top - 14);
+    const textY = Math.max(14, chartArea.top - 14);
 
     ctx.save();
     ctx.font = 'bold 12px Arial, sans-serif';
@@ -162,42 +162,6 @@ const weeklyIntervalGridPlugin = {
     });
 
     ctx.restore();
-  }
-};
-
-const weeklyPeakHighlightPlugin = {
-  id: 'weeklyPeakHighlight',
-  beforeDatasetsDraw(chart, args, pluginOptions) {
-    const settings = chart.options?.plugins?.weeklyPeakHighlight || {};
-    const peakIndex = settings.peakIndex;
-    if (peakIndex === undefined || peakIndex === null) return;
-
-    const { ctx, chartArea, scales } = chart;
-    if (!ctx || !chartArea || !scales?.x || !scales?.y) return;
-
-    const xScale = scales.x;
-    const step = Math.max(12, (xScale.right - xScale.left) / Math.max(1, chart.data.labels.length));
-    const left = Math.max(xScale.left, xScale.getPixelForValue(peakIndex) - step / 2);
-    const right = Math.min(xScale.right, xScale.getPixelForValue(peakIndex) + step / 2);
-    if (right <= left) return;
-
-    ctx.save();
-    ctx.fillStyle = '#F5DCDA';
-    ctx.globalAlpha = 0.95;
-    ctx.fillRect(left, chartArea.top, right - left, chartArea.bottom - chartArea.top);
-    ctx.restore();
-
-    const label = settings.label || 'Peak Week';
-    if (label) {
-      ctx.save();
-      ctx.font = '12px monospace';
-      ctx.fillStyle = '#4d3232';
-      const textWidth = ctx.measureText(label).width;
-      const textX = left + (right - left) / 2 - textWidth / 2;
-      const textY = chartArea.top - 8;
-      ctx.fillText(label, textX, textY);
-      ctx.restore();
-    }
   }
 };
 
@@ -446,22 +410,25 @@ function dc(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
 
 function renderWeekly() {
   dc('weekly');
-<<<<<<< HEAD
-  const chartCanvas = document.getElementById('chartWeekly');
+  let chartCanvas = document.getElementById('chartWeekly');
   const chartBox = document.getElementById('weeklyChartBox');
+  if (!chartBox) return;
+
+  if (!chartCanvas) {
+    chartBox.innerHTML = '<canvas id="chartWeekly"></canvas>';
+    chartCanvas = document.getElementById('chartWeekly');
+  }
+
   let rows = RAW[currentDisease].weekly_by_hospital;
   if (selectedHospital) rows = rows.filter(r => r['Hospital Name'] === selectedHospital);
-=======
-  const rows = RAW[currentDisease].weekly_by_hospital;
->>>>>>> be0d2b87589eb7d4f98a5aa5751d17725d4e1b7c
+
   const weeks = GLOBAL_WEEKS;
   const totalsByWeek = {};
   rows.forEach(r => { totalsByWeek[r.week] = (totalsByWeek[r.week] || 0) + r.count; });
   const data = weeks.map(w => totalsByWeek[w] || 0);
-  // guard for empty dataset
-  if (!weeks || !weeks.length) {
-<<<<<<< HEAD
-    chartCanvas.getContext && chartCanvas.parentElement && (chartCanvas.parentElement.innerHTML = '<div class="zero-msg">No data</div>');
+
+  if (!weeks.length || data.every(v => v === 0)) {
+    chartCanvas.parentElement && (chartCanvas.parentElement.innerHTML = '<div class="zero-msg">No data</div>');
     return;
   }
 
@@ -496,28 +463,18 @@ function renderWeekly() {
     chartBox.appendChild(sliderWrap);
   }
 
-  // find peak index dynamically (sum across hospitals or filtered selection)
   let peakIndex = 0;
   let peakVal = -Infinity;
   for (let i = 0; i < visibleData.length; i++) {
-    if ((visibleData[i] || 0) > peakVal) { peakVal = visibleData[i] || 0; peakIndex = i; }
-=======
-    document.getElementById('chartWeekly').getContext && document.getElementById('chartWeekly').parentElement && (document.getElementById('chartWeekly').parentElement.innerHTML = '<div class="zero-msg">No data</div>');
-    return;
-  }
-
-  // find peak index dynamically (sum across hospitals or filtered selection)
-  let peakIndex = 0;
-  let peakVal = -Infinity;
-  for (let i = 0; i < data.length; i++) {
-    if ((data[i] || 0) > peakVal) { peakVal = data[i] || 0; peakIndex = i; }
->>>>>>> be0d2b87589eb7d4f98a5aa5751d17725d4e1b7c
+    if ((visibleData[i] || 0) > peakVal) {
+      peakVal = visibleData[i] || 0;
+      peakIndex = i;
+    }
   }
 
   const accent = '#4a4a4a';
   document.getElementById('legendWeekly').innerHTML = '';
 
-<<<<<<< HEAD
   const formatWeeklyTick = (rawDate, index) => {
     if (!rawDate) return '';
     const [year, month, day] = rawDate.split('-').map(Number);
@@ -554,34 +511,19 @@ function renderWeekly() {
       layout: {
         padding: { top: 38, right: 28, bottom: 30, left: 28 }
       },
-=======
-  // use the Morandi red with requested opacity via helper
-  const highlightColor = hexToRgba('#F5DCDA', 0.4);
-
-  charts['weekly'] = new Chart(document.getElementById('chartWeekly'), {
-    type: 'bar',
-    data: { labels: weeks.map(w => w.slice(5)), datasets: [{ label: 'Total cases', data, backgroundColor: accent, borderRadius: 14, borderSkipped: false }] },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
->>>>>>> be0d2b87589eb7d4f98a5aa5751d17725d4e1b7c
       plugins: {
         legend: { display: false },
         weeklyPeakHighlight: {
           peakIndex,
           label: 'Peak Week'
-<<<<<<< HEAD
         },
         weeklyIntervalGrid: {
           enabled: true,
           labels: boundaryLabels
-=======
->>>>>>> be0d2b87589eb7d4f98a5aa5751d17725d4e1b7c
         }
       },
       scales: {
         x: {
-<<<<<<< HEAD
           type: 'category',
           offset: true,
           ticks: {
@@ -613,60 +555,20 @@ function renderWeekly() {
       }
     },
     plugins: [weeklyIntervalGridPlugin, weeklyPeakHighlightPlugin, barValueLabelsPlugin]
-=======
-          grid: { display: false },
-          ticks: { font: { size: 10 }, autoSkip: true, maxTicksLimit: 12 },
-          offset: true
-        },
-        y: { beginAtZero: true, grace: '5%', ticks: { font: { size: 10 }, precision: 0, callback: value => Number.isInteger(value) ? value : '' } }
-      }
-    },
-    plugins: [weeklyPeakHighlightPlugin]
->>>>>>> be0d2b87589eb7d4f98a5aa5751d17725d4e1b7c
   });
 }
 
 function renderHospital() {
   dc('hosp');
-<<<<<<< HEAD
-  let rows = RAW[currentDisease].weekly_by_hospital;
-  if (selectedHospital) rows = rows.filter(r => r['Hospital Name'] === selectedHospital);
-  const weeks = GLOBAL_WEEKS;
-  const hospitals = [...new Set(rows.map(r => r['Hospital Name']))].sort();
-  if (!rows.length) { document.getElementById('chartHosp').parentElement.innerHTML = '<div class="zero-msg">No data</div>'; return; }
-  const datasets = hospitals.map(h => {
-    const values = weeks.map(w => { const r = rows.find(x => x.week === w && x['Hospital Name'] === h); return r ? r.count : 0; });
-    return { label:h, data:values, borderColor:HOSP_COLORS[h]||'#888', backgroundColor:(HOSP_COLORS[h]||'#888')+'22', tension:0.3, fill:false, pointRadius:2, borderWidth:2 };
-  });
-  document.getElementById('legendWeekly').innerHTML = hospitals.map(h =>
-    `<span class="legend-item"><span class="legend-dot" style="background:${HOSP_COLORS[h]||'#888'}"></span>${h}</span>`).join('');
-  // compute totals per week to detect peak
-  const totalsByWeek = {};
-  rows.forEach(r => { totalsByWeek[r.week] = (totalsByWeek[r.week] || 0) + r.count; });
-  const totalData = weeks.map(w => totalsByWeek[w] || 0);
-
-  // find peak index and overall max for y-range
-  let peakIndex = 0, peakVal = -Infinity;
-  for (let i = 0; i < totalData.length; i++) {
-    if ((totalData[i] || 0) > peakVal) { peakVal = totalData[i] || 0; peakIndex = i; }
-  }
-
-  const highlightColor = hexToRgba('#F5DCDA', 0.4);
-
-  charts['hosp'] = new Chart(document.getElementById('chartHosp'), {
-    type: 'line',
-    data: { labels: weeks.map(w => w.slice(5)), datasets },
-=======
   const isMonthly = activeView === 'monthly';
-  const color = DISEASE_COLORS[currentDisease] || '#378ADD';
   const chartHost = document.getElementById('chartHosp')?.parentElement;
   if (!chartHost) return;
-  const ensureCanvas = () => {
-    if (!document.getElementById('chartHosp')) {
-      chartHost.innerHTML = '<canvas id="chartHosp"></canvas>';
-    }
-  };
-  ensureCanvas();
+
+  let chartCanvas = document.getElementById('chartHosp');
+  if (!chartCanvas) {
+    chartHost.innerHTML = '<canvas id="chartHosp"></canvas>';
+    chartCanvas = document.getElementById('chartHosp');
+  }
 
   let labels = [];
   let datasets = [];
@@ -714,7 +616,10 @@ function renderHospital() {
     }
     labels = weeks.map(w => w.slice(5));
     datasets = hospitals.map(h => {
-      const values = weeks.map(w => { const r = rows.find(x => x.week === w && x['Hospital Name'] === h); return r ? r.count : 0; });
+      const values = weeks.map(w => {
+        const r = rows.find(x => x.week === w && x['Hospital Name'] === h);
+        return r ? r.count : 0;
+      });
       return {
         label: h,
         data: values,
@@ -740,10 +645,9 @@ function renderHospital() {
   const highlightColor = hexToRgba('#F5DCDA', 0.4);
   const maxTotal = Math.max(...totals, 1);
 
-  charts['hosp'] = new Chart(document.getElementById('chartHosp'), {
+  charts['hosp'] = new Chart(chartCanvas, {
     type: 'line',
     data: { labels, datasets },
->>>>>>> be0d2b87589eb7d4f98a5aa5751d17725d4e1b7c
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -757,25 +661,14 @@ function renderHospital() {
               xMin: peakIndex - 0.5,
               xMax: peakIndex + 0.5,
               yMin: 0,
-<<<<<<< HEAD
-              yMax: Math.max(...totalData, 1),
-=======
               yMax: maxTotal,
->>>>>>> be0d2b87589eb7d4f98a5aa5751d17725d4e1b7c
               backgroundColor: highlightColor,
               borderWidth: 0,
               drawTime: 'beforeDatasetsDraw',
               label: {
-<<<<<<< HEAD
-                content: ['Peak Week'],
-                enabled: true,
-                position: 'center',
-                // nudge the label above the highlight block so it sits visually outside the box
-=======
                 content: [isMonthly ? 'Peak Month' : 'Peak Week'],
                 enabled: true,
                 position: 'center',
->>>>>>> be0d2b87589eb7d4f98a5aa5751d17725d4e1b7c
                 yAdjust: -24,
                 backgroundColor: 'transparent',
                 color: '#4d3232',
@@ -786,14 +679,10 @@ function renderHospital() {
           }
         }
       },
-<<<<<<< HEAD
-      scales: { x: { ticks: { font: { size: 10 }, autoSkip: true, maxTicksLimit: 12 }, offset: true }, y: { beginAtZero: true, grace: '5%', ticks: { font: { size: 10 }, precision: 0, callback: value => Number.isInteger(value) ? value : '' } } }
-=======
       scales: {
         x: { ticks: { font: { size: 10 }, autoSkip: true, maxTicksLimit: 12 }, offset: true },
         y: { beginAtZero: true, grace: '5%', ticks: { font: { size: 10 }, precision: 0, callback: value => Number.isInteger(value) ? value : '' } }
       }
->>>>>>> be0d2b87589eb7d4f98a5aa5751d17725d4e1b7c
     }
   });
 }
